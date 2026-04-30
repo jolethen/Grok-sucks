@@ -3,295 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Gemini Universe</title>
+    <title>Gemini Engine: Odyssey</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Courier New', Courier, monospace;
-            color: #fff;
-            user-select: none;
-        }
-
-        /* Heads Up Display (HUD) */
-        #hud {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 20, 40, 0.7);
-            padding: 15px;
-            border: 1px solid #00ffff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-        }
-
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(0, 255, 255, 0.5);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        #crosshair::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 4px;
-            height: 4px;
-            background-color: #00ffff;
-            border-radius: 50%;
-        }
-
-        /* Overlay for instructions */
-        #instructions {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            cursor: pointer;
-        }
-
-        h1 { color: #00ffff; text-transform: uppercase; letter-spacing: 3px; }
-        p { color: #aaa; font-size: 1.2rem; }
-        .highlight { color: #fff; font-weight: bold; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: #fff; user-select: none; }
+        #hud { position: absolute; bottom: 20px; left: 20px; pointer-events: none; z-index: 10; background: rgba(0, 20, 40, 0.8); padding: 15px; border: 1px solid #00ffff; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 50%; z-index: 10; transition: all 0.2s; }
+        #crosshair::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 2px; background: #00ffff; }
+        #instructions { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; cursor: pointer; text-align: center; }
+        h1 { color: #00ffff; text-transform: uppercase; letter-spacing: 5px; margin-bottom: 5px; }
+        .highlight { color: #00ffff; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="instructions">
-        <h1>Gemini Space Engine</h1>
-        <p>Click anywhere to initiate Flight Sequence</p>
-        <p>Use <span class="highlight">W A S D</span> to fly. Use <span class="highlight">Mouse</span> to look around.</p>
-        <p>Press <span class="highlight">ESC</span> to pause.</p>
+        <h1>UNIVERSE LOADED</h1>
+        <p>Click to Engage <span class="highlight">Warp Drive</span></p>
+        <p>Controls: <span class="highlight">WASD</span> + <span class="highlight">MOUSE</span> | Boost: <span class="highlight">SHIFT</span></p>
     </div>
 
     <div id="crosshair"></div>
 
     <div id="hud">
-        <div id="target-name" style="font-size: 1.5rem; color: #00ffff; font-weight: bold;">Target: Deep Space</div>
-        <div id="target-dist">Distance: ---</div>
-        <div id="speed-ind" style="margin-top: 10px; color: #aaa;">Engine Status: Idle</div>
+        <div id="target-name" style="font-size: 1.2rem; color: #00ffff;">Scanning...</div>
+        <div id="target-dist" style="font-size: 0.9rem; color: #aaa;">Range: 0 ly</div>
+        <div id="speed-ind" style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid #333; pt-5px;">THRUST: 0%</div>
     </div>
 
-    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- 1. CORE SETUP ---
+        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.0002); // Deep space fade
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x222222);
-        scene.add(ambientLight);
+        // Lights
+        const sunLight = new THREE.PointLight(0xffffff, 2, 10000);
+        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x333333));
 
-        // --- 2. GENERATE THE OBSERVABLE UNIVERSE (100 Objects) ---
-        const universeObjects = [];
-        const objectNames = ['Nebula', 'Red Dwarf', 'Blue Supergiant', 'Gas Giant', 'Rocky Exoplanet', 'Pulsar', 'Black Hole'];
-        const group = new THREE.Group();
-        scene.add(group);
+        // --- TWINKLING STARFIELD ---
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 8000;
+        const starPositions = new Float32Array(starCount * 3);
+        const starSizes = new Float32Array(starCount);
 
-        for (let i = 0; i < 100; i++) {
-            const typeIndex = Math.floor(Math.random() * objectNames.length);
-            const type = objectNames[typeIndex];
+        for(let i=0; i < starCount * 3; i++) {
+            starPositions[i] = (Math.random() - 0.5) * 15000;
+        }
+        for(let i=0; i < starCount; i++) {
+            starSizes[i] = Math.random() * 2;
+        }
+
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, transparent: true });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // --- PLANET GENERATOR (30 Real 3D Objects) ---
+        const planets = [];
+        const planetTypes = [
+            { name: 'Magma World', color: 0xff4400, emissive: 0x330000 },
+            { name: 'Ice Giant', color: 0x00ffff, emissive: 0x001133 },
+            { name: 'Toxic Swamp', color: 0x44ff44, emissive: 0x002200 },
+            { name: 'Desert Planet', color: 0xffcc88, emissive: 0x221100 },
+            { name: 'Terran-Like', color: 0x2244ff, emissive: 0x000022 }
+        ];
+
+        for (let i = 0; i < 30; i++) {
+            const type = planetTypes[Math.floor(Math.random() * planetTypes.length)];
+            const radius = 40 + Math.random() * 60;
             
-            let geometry, material, mesh;
-            const size = Math.random() * 50 + 10;
+            // Create Planet Sphere
+            const geo = new THREE.SphereGeometry(radius, 64, 64);
+            const mat = new THREE.MeshStandardMaterial({
+                color: type.color,
+                emissive: type.emissive,
+                roughness: 0.7,
+                metalness: 0.2,
+                flatShading: false
+            });
             
-            // Generate different types of celestial bodies
-            if (type === 'Black Hole') {
-                geometry = new THREE.SphereGeometry(size, 32, 32);
-                material = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Light cannot escape
-                mesh = new THREE.Mesh(geometry, material);
-                
-                // Accretion disk
-                const ringGeo = new THREE.TorusGeometry(size * 2, size * 0.2, 16, 100);
-                const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.7 });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = Math.PI / 2;
-                mesh.add(ring);
-            } 
-            else if (type === 'Gas Giant') {
-                geometry = new THREE.SphereGeometry(size, 32, 32);
-                material = new THREE.MeshStandardMaterial({ 
-                    color: Math.random() * 0xffffff, 
-                    wireframe: Math.random() > 0.5 // Some look like wireframe holograms
-                });
-                mesh = new THREE.Mesh(geometry, material);
-                
-                // 30% chance for rings
-                if(Math.random() > 0.7) {
-                    const ringGeo = new THREE.TorusGeometry(size * 1.5, 2, 16, 100);
-                    const ringMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-                    const ring = new THREE.Mesh(ringGeo, ringMat);
-                    ring.rotation.x = Math.random() * Math.PI;
-                    mesh.add(ring);
-                }
-            } 
-            else if (type.includes('Dwarf') || type.includes('Supergiant') || type.includes('Pulsar')) {
-                geometry = new THREE.SphereGeometry(size, 32, 32);
-                const color = type.includes('Red') ? 0xff4444 : (type.includes('Blue') ? 0x4444ff : 0xffffff);
-                material = new THREE.MeshBasicMaterial({ color: color }); // Glows in the dark
-                mesh = new THREE.Mesh(geometry, material);
-                
-                // Add actual light source to stars
-                const light = new THREE.PointLight(color, 2, 500);
-                mesh.add(light);
-            }
-            else {
-                geometry = new THREE.SphereGeometry(size, 32, 32);
-                material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.8 });
-                mesh = new THREE.Mesh(geometry, material);
-            }
-
-            // Scatter them randomly in a massive 6000x6000x6000 area
-            mesh.position.set(
-                (Math.random() - 0.5) * 6000,
-                (Math.random() - 0.5) * 6000,
-                (Math.random() - 0.5) * 6000
+            const planet = new THREE.Mesh(geo, mat);
+            
+            // Random Position
+            planet.position.set(
+                (Math.random() - 0.5) * 8000,
+                (Math.random() - 0.5) * 8000,
+                (Math.random() - 0.5) * 8000
             );
 
-            // Assign data for the HUD Raycaster
-            mesh.userData = { name: `${type} X-${Math.floor(Math.random() * 9000) + 1000}` };
-            
-            group.add(mesh);
-            universeObjects.push(mesh);
+            // Add an Atmosphere Glow
+            const atmosGeo = new THREE.SphereGeometry(radius * 1.1, 32, 32);
+            const atmosMat = new THREE.MeshBasicMaterial({
+                color: type.color,
+                transparent: true,
+                opacity: 0.15,
+                side: THREE.BackSide
+            });
+            const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+            planet.add(atmosphere);
+
+            // 40% chance for Rings
+            if(Math.random() > 0.6) {
+                const ringGeo = new THREE.RingGeometry(radius * 1.4, radius * 2.2, 64);
+                const ringMat = new THREE.MeshBasicMaterial({ 
+                    color: type.color, 
+                    side: THREE.DoubleSide, 
+                    transparent: true, 
+                    opacity: 0.4 
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                planet.add(ring);
+            }
+
+            planet.userData = { name: `${type.name} ${Math.floor(Math.random() * 999)}` };
+            scene.add(planet);
+            planets.push(planet);
         }
 
-        // --- 3. BACKGROUND STARFIELD ---
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 10000;
-        const starPos = new Float32Array(starCount * 3);
-        for(let i=0; i<starCount*3; i++) {
-            starPos[i] = (Math.random() - 0.5) * 10000;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 2});
-        const starMesh = new THREE.Points(starGeo, starMat);
-        scene.add(starMesh);
-
-        // --- 4. FLIGHT CONTROLS & POINTER LOCK ---
+        // --- CONTROLS ---
         let isLocked = false;
-        const instructions = document.getElementById('instructions');
-
-        instructions.addEventListener('click', () => {
-            document.body.requestPointerLock();
-        });
+        const ins = document.getElementById('instructions');
+        ins.addEventListener('click', () => document.body.requestPointerLock());
 
         document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === document.body) {
-                isLocked = true;
-                instructions.style.display = 'none';
-            } else {
-                isLocked = false;
-                instructions.style.display = 'flex';
-            }
+            isLocked = (document.pointerLockElement === document.body);
+            ins.style.display = isLocked ? 'none' : 'flex';
         });
 
-        // Mouse Look
-        let pitch = 0;
-        let yaw = 0;
-        document.addEventListener('mousemove', (event) => {
+        let pitch = 0, yaw = 0;
+        document.addEventListener('mousemove', (e) => {
             if (!isLocked) return;
-            yaw -= event.movementX * 0.002;
-            pitch -= event.movementY * 0.002;
-            pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch)); // Prevent flipping over
+            yaw -= e.movementX * 0.002;
+            pitch -= e.movementY * 0.002;
+            pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
             camera.rotation.set(pitch, yaw, 0, 'YXZ');
         });
 
-        // Keyboard Movement (WASD)
-        const keys = { w: false, a: false, s: false, d: false, shift: false };
-        document.addEventListener('keydown', (e) => { 
-            const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = true; 
-        });
-        document.addEventListener('keyup', (e) => { 
-            const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = false; 
-        });
+        const keys = { w:0, a:0, s:0, d:0, shift:0 };
+        document.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
+        document.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
 
-        // --- 5. TARGETING SYSTEM (RAYCASTER) ---
+        // --- RAYCASTER ---
         const raycaster = new THREE.Raycaster();
-        const center = new THREE.Vector2(0, 0); // Center of the screen
-        const hudName = document.getElementById('target-name');
-        const hudDist = document.getElementById('target-dist');
-        const hudSpeed = document.getElementById('speed-ind');
+        const pointer = new THREE.Vector2(0, 0);
 
-        function updateTargeting() {
-            raycaster.setFromCamera(center, camera);
-            const intersects = raycaster.intersectObjects(universeObjects);
-
-            if (intersects.length > 0) {
-                const target = intersects[0];
-                hudName.innerText = `Target: ${target.object.userData.name}`;
-                hudDist.innerText = `Distance: ${Math.floor(target.distance)} Light Years`;
-                document.getElementById('crosshair').style.borderColor = '#ffaa00';
-                document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1.5)';
-            } else {
-                hudName.innerText = `Target: Deep Space`;
-                hudDist.innerText = `Distance: ---`;
-                document.getElementById('crosshair').style.borderColor = 'rgba(0, 255, 255, 0.5)';
-                document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1)';
-            }
-        }
-
-        // --- 6. ANIMATION & FLIGHT LOOP ---
-        const direction = new THREE.Vector3();
-        function animate() {
+        // --- MAIN LOOP ---
+        function animate(time) {
             requestAnimationFrame(animate);
 
+            // Twinkle stars using Sine wave
+            stars.material.opacity = 0.5 + Math.sin(time * 0.002) * 0.5;
+
             if (isLocked) {
-                // Determine flight speed
-                const speed = keys.shift ? 20 : 5; // Hold shift to boost
-                hudSpeed.innerText = (keys.w || keys.a || keys.s || keys.d) ? `Engine Status: Active (Warp ${keys.shift ? '2' : '1'})` : `Engine Status: Idle`;
+                const speed = keys.shift ? 45 : 12;
+                const dir = new THREE.Vector3(keys.d - keys.a, 0, keys.s - keys.w).normalize();
+                camera.translateX(dir.x * speed);
+                camera.translateZ(dir.z * speed);
 
-                // Calculate movement relative to camera direction
-                direction.z = Number(keys.w) - Number(keys.s);
-                direction.x = Number(keys.d) - Number(keys.a);
-                direction.normalize();
+                document.getElementById('speed-ind').innerText = `THRUST: ${keys.w || keys.s || keys.a || keys.d ? (keys.shift ? '200%' : '100%') : '0%'}`;
 
-                if (keys.w || keys.s) camera.translateZ(-direction.z * speed);
-                if (keys.a || keys.d) camera.translateX(direction.x * speed);
-
-                // Spin objects slowly for life-like effect
-                universeObjects.forEach(obj => {
-                    obj.rotation.y += 0.001;
-                    obj.rotation.x += 0.0005;
-                });
-
-                // Run Targeting scanner
-                updateTargeting();
+                // Scanning
+                raycaster.setFromCamera(pointer, camera);
+                const intersects = raycaster.intersectObjects(planets);
+                const cross = document.getElementById('crosshair');
+                
+                if (intersects.length > 0) {
+                    const p = intersects[0];
+                    document.getElementById('target-name').innerText = p.object.userData.name;
+                    document.getElementById('target-dist').innerText = `Range: ${Math.floor(p.distance)} ly`;
+                    cross.style.borderColor = '#ff00ff';
+                    cross.style.width = '40px';
+                    cross.style.height = '40px';
+                } else {
+                    document.getElementById('target-name').innerText = "Deep Space";
+                    document.getElementById('target-dist').innerText = `Range: ---`;
+                    cross.style.borderColor = 'rgba(0, 255, 255, 0.3)';
+                    cross.style.width = '24px';
+                    cross.style.height = '24px';
+                }
             }
+
+            // Rotate Planets
+            planets.forEach(p => p.rotation.y += 0.005);
 
             renderer.render(scene, camera);
         }
-
         animate();
 
-        // Handle Window Resizing gracefully
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();

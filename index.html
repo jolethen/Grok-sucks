@@ -2,157 +2,220 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beyond the Competition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gemini Engine: Odyssey Pro</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Courier New', Courier, monospace;
-            cursor: none; /* Hides the default cursor */
-        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: #fff; user-select: none; touch-action: none; }
+        #hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; background: rgba(0, 10, 20, 0.8); padding: 15px; border-left: 3px solid #00ffff; font-size: 0.9rem; letter-spacing: 1px; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 50%; pointer-events: none; }
+        #crosshair::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #00ffff; border-radius: 50%; }
+        #instructions { position: absolute; inset: 0; background: radial-gradient(circle, #001525 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; cursor: pointer; }
+        .glitch { color: #00ffff; font-weight: bold; text-transform: uppercase; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px #ff00ff; }
         
-        /* The Custom Glowing Cursor */
-        #custom-cursor {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle, #fff 0%, rgba(0, 255, 255, 0.5) 50%, transparent 100%);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s;
-            z-index: 100;
-            box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.4);
-        }
+        /* Mobile Controls */
+        #joy-ui { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid #00ffff; border-radius: 50%; display: none; }
+        #joy-knob { position: absolute; top: 40px; left: 40px; width: 40px; height: 40px; background: #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff; }
+        #boost-btn { position: absolute; bottom: 60px; right: 40px; width: 70px; height: 70px; border: 2px solid #ff00ff; border-radius: 50%; display: none; align-items: center; justify-content: center; color: #ff00ff; font-weight: bold; }
 
-        /* Overlay Text */
-        #ui-layer {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        h1 {
-            font-size: 3rem;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-            margin-bottom: 10px;
-        }
-
-        p {
-            font-size: 1.2rem;
-            color: #aaa;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.5;
-        }
-
-        .highlight {
-            color: #00ffff;
-            font-weight: bold;
-        }
+        @media (max-width: 1024px) { #joy-ui, #boost-btn { display: flex; } }
     </style>
 </head>
 <body>
 
-    <div id="custom-cursor"></div>
-
-    <div id="ui-layer">
-        <h1>Built Different</h1>
-        <p>Why start a flame war when you can just build the universe? <br>Powered by <span class="highlight">Gemini</span>. Crafted for the future.</p>
+    <div id="instructions" onclick="startEngine()">
+        <div class="glitch">Deep Space Signal Acquired</div>
+        <p>Tap to Initialize Neural Link</p>
+        <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 30px;">[ SYSTEMS: TEXTURE_GEN_V2 | RING_PHYSICS_ENABLED ]</p>
     </div>
 
-    <!-- Three.js CDN -->
+    <div id="hud">
+        <div id="target-name" style="color: #00ffff;">SENSORS: STANDBY</div>
+        <div id="target-dist" style="opacity: 0.7;">COORD: 0, 0, 0</div>
+    </div>
+
+    <div id="crosshair"></div>
+    <div id="joy-ui"><div id="joy-knob"></div></div>
+    <div id="boost-btn">BOOST</div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <script>
-        // 1. Setup Scene, Camera, and Renderer
+        // --- 1. PROCEDURAL TEXTURE GENERATOR ---
+        function createPlanetTexture(baseColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Fill Base
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Add Texture Noise/Clouds
+            for (let i = 0; i < 1500; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+                ctx.beginPath();
+                ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 40, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Add Darker Patches (Craters or Shadows)
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.2})`;
+                ctx.beginPath();
+                ctx.ellipse(Math.random() * 512, Math.random() * 512, Math.random() * 100, Math.random() * 20, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
+        }
+
+        // --- 2. ENGINE SETUP ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 30000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        // 2. Create the Starfield (Particles)
-        const starGeometry = new THREE.BufferGeometry();
-        const starCount = 5000;
-        const posArray = new Float32Array(starCount * 3);
+        scene.add(new THREE.AmbientLight(0x404040, 1.5));
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(1, 1, 1);
+        scene.add(sun);
 
-        for(let i = 0; i < starCount * 3; i++) {
-            // Spread stars randomly in a massive sphere
-            posArray[i] = (Math.random() - 0.5) * 2000;
+        // --- 3. THE UNIVERSE BUILDER ---
+        const planets = [];
+        const planetColors = ['#2c3e50', '#e67e22', '#27ae60', '#2980b9', '#8e44ad', '#f1c40f'];
+
+        for (let i = 0; i < 40; i++) {
+            const group = new THREE.Group();
+            const radius = 40 + Math.random() * 60;
+            const color = planetColors[Math.floor(Math.random() * planetColors.length)];
+            
+            // Planet Core
+            const geo = new THREE.SphereGeometry(radius, 64, 64);
+            const mat = new THREE.MeshStandardMaterial({ 
+                map: createPlanetTexture(color),
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const planet = new THREE.Mesh(geo, mat);
+            group.add(planet);
+
+            // Add Atmosphere Glow
+            const glowGeo = new THREE.SphereGeometry(radius * 1.05, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.1, side: THREE.BackSide });
+            group.add(new THREE.Mesh(glowGeo, glowMat));
+
+            // RANDOM RINGS (30% Chance)
+            if (Math.random() > 0.7) {
+                const ringGeo = new THREE.RingGeometry(radius * 1.5, radius * 2.5, 64);
+                const ringMat = new THREE.MeshStandardMaterial({ 
+                    color: color, 
+                    side: THREE.DoubleSide, 
+                    transparent: true, 
+                    opacity: 0.5,
+                    map: createPlanetTexture('#333') // Reusing texture logic for ring dust
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.random() * Math.PI;
+                ring.rotation.y = Math.random() * Math.PI;
+                group.add(ring);
+            }
+
+            group.position.set((Math.random()-0.5)*15000, (Math.random()-0.5)*10000, (Math.random()-0.5)*15000);
+            group.userData = { name: "Sector " + (Math.floor(Math.random()*9000)), radius: radius };
+            scene.add(group);
+            planets.push(group);
         }
 
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        // --- 4. CONTROLS & MOBILE LOGIC ---
+        let isStarted = false;
+        let moveX = 0, moveZ = 0, isBoosting = false;
+        let pitch = 0, yaw = 0;
+        let joyId = null, lookId = null, lastX = 0, lastY = 0;
 
-        const starMaterial = new THREE.PointsMaterial({
-            size: 2,
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.8
+        function startEngine() {
+            isStarted = true;
+            document.getElementById('instructions').style.display = 'none';
+            if (!/Android|iPhone/i.test(navigator.userAgent)) document.body.requestPointerLock();
+        }
+
+        // Mobile Touch Events
+        window.addEventListener('touchstart', e => {
+            for(let t of e.changedTouches) {
+                if (t.clientX < window.innerWidth/2) joyId = t.identifier;
+                else { lookId = t.identifier; lastX = t.clientX; lastY = t.clientY; }
+            }
         });
 
-        const starMesh = new THREE.Points(starGeometry, starMaterial);
-        scene.add(starMesh);
-
-        camera.position.z = 500;
-
-        // 3. Mouse/Touch Interaction
-        let mouseX = 0;
-        let mouseY = 0;
-        const cursor = document.getElementById('custom-cursor');
-
-        // Update custom cursor position and track coordinates for 3D rotation
-        function updateMouse(event) {
-            let clientX = event.clientX || (event.touches && event.touches[0].clientX);
-            let clientY = event.clientY || (event.touches && event.touches[0].clientY);
-            
-            if (clientX !== undefined && clientY !== undefined) {
-                // Move custom HTML cursor
-                cursor.style.left = clientX + 'px';
-                cursor.style.top = clientY + 'px';
-
-                // Normalize mouse coordinates for Three.js (-1 to +1)
-                mouseX = (clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(clientY / window.innerHeight) * 2 + 1;
+        const knob = document.getElementById('joy-knob');
+        window.addEventListener('touchmove', e => {
+            if (!isStarted) return;
+            for(let t of e.changedTouches) {
+                if (t.identifier === joyId) {
+                    const rect = document.getElementById('joy-ui').getBoundingClientRect();
+                    const dx = t.clientX - (rect.left + 60), dy = t.clientY - (rect.top + 60);
+                    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 50);
+                    const angle = Math.atan2(dy, dx);
+                    knob.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+                    moveX = (Math.cos(angle)*dist)/50; moveZ = (Math.sin(angle)*dist)/50;
+                } else if (t.identifier === lookId) {
+                    yaw -= (t.clientX - lastX) * 0.005; pitch -= (t.clientY - lastY) * 0.005;
+                    lastX = t.clientX; lastY = t.clientY;
+                }
             }
-        }
+        });
 
-        document.addEventListener('mousemove', updateMouse);
-        document.addEventListener('touchmove', updateMouse);
+        window.addEventListener('touchend', e => {
+            for(let t of e.changedTouches) {
+                if (t.identifier === joyId) { joyId = null; moveX = 0; moveZ = 0; knob.style.transform = 'translate(0,0)'; }
+                if (t.identifier === lookId) lookId = null;
+            }
+        });
 
-        // Expand cursor on click/touch
-        document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
-        document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
-        document.addEventListener('touchstart', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
-        document.addEventListener('touchend', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
+        document.getElementById('boost-btn').addEventListener('touchstart', e => { e.preventDefault(); isBoosting = true; });
+        document.getElementById('boost-btn').addEventListener('touchend', () => isBoosting = false);
 
-        // 4. Animation Loop
+        // Desktop Inputs
+        const keys = { w:0, a:0, s:0, d:0, shift:0 };
+        document.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
+        document.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
+        document.addEventListener('mousemove', e => {
+            if (document.pointerLockElement) { yaw -= e.movementX*0.002; pitch -= e.movementY*0.002; }
+        });
+
+        // --- 5. ANIMATION LOOP ---
+        const raycaster = new THREE.Raycaster();
         function animate() {
             requestAnimationFrame(animate);
+            if (isStarted) {
+                pitch = Math.max(-1.5, Math.min(1.5, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+                
+                const speed = (isBoosting || keys.shift) ? 60 : 15;
+                if(keys.w) camera.translateZ(-speed); if(keys.s) camera.translateZ(speed);
+                if(keys.a) camera.translateX(-speed); if(keys.d) camera.translateX(speed);
+                camera.translateX(moveX * speed); camera.translateZ(moveZ * speed);
 
-            // Slowly rotate the entire starfield
-            starMesh.rotation.y += 0.001;
-            starMesh.rotation.x += 0.0005;
-
-            // Make the stars react to the cursor (parallax effect)
-            starMesh.rotation.y += mouseX * 0.01;
-            starMesh.rotation.x += mouseY * 0.01;
-
+                // Scanning logic
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                const hits = raycaster.intersectObjects(scene.children, true);
+                if (hits.length > 0) {
+                    const data = hits[0].object.parent.userData;
+                    if(data.name) {
+                        document.getElementById('target-name').innerText = "TARGET: " + data.name;
+                        document.getElementById('target-dist').innerText = "DIST: " + Math.floor(hits[0].distance) + " LY";
+                    }
+                }
+            }
+            // Rotate all planets
+            planets.forEach(p => { p.children[0].rotation.y += 0.002; });
             renderer.render(scene, camera);
         }
-
         animate();
 
-        // 5. Handle Window Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();

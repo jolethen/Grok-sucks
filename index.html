@@ -3,156 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beyond the Competition</title>
+    <title>The Gemini Universe</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: #000;
             font-family: 'Courier New', Courier, monospace;
-            cursor: none; /* Hides the default cursor */
-        }
-        
-        /* The Custom Glowing Cursor */
-        #custom-cursor {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle, #fff 0%, rgba(0, 255, 255, 0.5) 50%, transparent 100%);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s;
-            z-index: 100;
-            box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.4);
+            color: #fff;
+            user-select: none;
         }
 
-        /* Overlay Text */
-        #ui-layer {
+        /* Heads Up Display (HUD) */
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 20, 40, 0.7);
+            padding: 15px;
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
             pointer-events: none;
             z-index: 10;
         }
 
-        h1 {
-            font-size: 3rem;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-            margin-bottom: 10px;
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 4px;
+            background-color: #00ffff;
+            border-radius: 50%;
         }
 
-        p {
-            font-size: 1.2rem;
-            color: #aaa;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.5;
+        /* Overlay for instructions */
+        #instructions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            cursor: pointer;
         }
 
-        .highlight {
-            color: #00ffff;
-            font-weight: bold;
-        }
+        h1 { color: #00ffff; text-transform: uppercase; letter-spacing: 3px; }
+        p { color: #aaa; font-size: 1.2rem; }
+        .highlight { color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="custom-cursor"></div>
-
-    <div id="ui-layer">
-        <h1>Built Different</h1>
-        <p>Why start a flame war when you can just build the universe? <br>Powered by <span class="highlight">Gemini</span>. Crafted for the future.</p>
+    <div id="instructions">
+        <h1>Gemini Space Engine</h1>
+        <p>Click anywhere to initiate Flight Sequence</p>
+        <p>Use <span class="highlight">W A S D</span> to fly. Use <span class="highlight">Mouse</span> to look around.</p>
+        <p>Press <span class="highlight">ESC</span> to pause.</p>
     </div>
 
-    <!-- Three.js CDN -->
+    <div id="crosshair"></div>
+
+    <div id="hud">
+        <div id="target-name" style="font-size: 1.5rem; color: #00ffff; font-weight: bold;">Target: Deep Space</div>
+        <div id="target-dist">Distance: ---</div>
+        <div id="speed-ind" style="margin-top: 10px; color: #aaa;">Engine Status: Idle</div>
+    </div>
+
+    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <script>
-        // 1. Setup Scene, Camera, and Renderer
+        // --- 1. CORE SETUP ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.0002); // Deep space fade
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 2. Create the Starfield (Particles)
-        const starGeometry = new THREE.BufferGeometry();
-        const starCount = 5000;
-        const posArray = new Float32Array(starCount * 3);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x222222);
+        scene.add(ambientLight);
 
-        for(let i = 0; i < starCount * 3; i++) {
-            // Spread stars randomly in a massive sphere
-            posArray[i] = (Math.random() - 0.5) * 2000;
+        // --- 2. GENERATE THE OBSERVABLE UNIVERSE (100 Objects) ---
+        const universeObjects = [];
+        const objectNames = ['Nebula', 'Red Dwarf', 'Blue Supergiant', 'Gas Giant', 'Rocky Exoplanet', 'Pulsar', 'Black Hole'];
+        const group = new THREE.Group();
+        scene.add(group);
+
+        for (let i = 0; i < 100; i++) {
+            const typeIndex = Math.floor(Math.random() * objectNames.length);
+            const type = objectNames[typeIndex];
+            
+            let geometry, material, mesh;
+            const size = Math.random() * 50 + 10;
+            
+            // Generate different types of celestial bodies
+            if (type === 'Black Hole') {
+                geometry = new THREE.SphereGeometry(size, 32, 32);
+                material = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Light cannot escape
+                mesh = new THREE.Mesh(geometry, material);
+                
+                // Accretion disk
+                const ringGeo = new THREE.TorusGeometry(size * 2, size * 0.2, 16, 100);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.7 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                mesh.add(ring);
+            } 
+            else if (type === 'Gas Giant') {
+                geometry = new THREE.SphereGeometry(size, 32, 32);
+                material = new THREE.MeshStandardMaterial({ 
+                    color: Math.random() * 0xffffff, 
+                    wireframe: Math.random() > 0.5 // Some look like wireframe holograms
+                });
+                mesh = new THREE.Mesh(geometry, material);
+                
+                // 30% chance for rings
+                if(Math.random() > 0.7) {
+                    const ringGeo = new THREE.TorusGeometry(size * 1.5, 2, 16, 100);
+                    const ringMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.rotation.x = Math.random() * Math.PI;
+                    mesh.add(ring);
+                }
+            } 
+            else if (type.includes('Dwarf') || type.includes('Supergiant') || type.includes('Pulsar')) {
+                geometry = new THREE.SphereGeometry(size, 32, 32);
+                const color = type.includes('Red') ? 0xff4444 : (type.includes('Blue') ? 0x4444ff : 0xffffff);
+                material = new THREE.MeshBasicMaterial({ color: color }); // Glows in the dark
+                mesh = new THREE.Mesh(geometry, material);
+                
+                // Add actual light source to stars
+                const light = new THREE.PointLight(color, 2, 500);
+                mesh.add(light);
+            }
+            else {
+                geometry = new THREE.SphereGeometry(size, 32, 32);
+                material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.8 });
+                mesh = new THREE.Mesh(geometry, material);
+            }
+
+            // Scatter them randomly in a massive 6000x6000x6000 area
+            mesh.position.set(
+                (Math.random() - 0.5) * 6000,
+                (Math.random() - 0.5) * 6000,
+                (Math.random() - 0.5) * 6000
+            );
+
+            // Assign data for the HUD Raycaster
+            mesh.userData = { name: `${type} X-${Math.floor(Math.random() * 9000) + 1000}` };
+            
+            group.add(mesh);
+            universeObjects.push(mesh);
         }
 
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-        const starMaterial = new THREE.PointsMaterial({
-            size: 2,
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const starMesh = new THREE.Points(starGeometry, starMaterial);
+        // --- 3. BACKGROUND STARFIELD ---
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 10000;
+        const starPos = new Float32Array(starCount * 3);
+        for(let i=0; i<starCount*3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 10000;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 2});
+        const starMesh = new THREE.Points(starGeo, starMat);
         scene.add(starMesh);
 
-        camera.position.z = 500;
+        // --- 4. FLIGHT CONTROLS & POINTER LOCK ---
+        let isLocked = false;
+        const instructions = document.getElementById('instructions');
 
-        // 3. Mouse/Touch Interaction
-        let mouseX = 0;
-        let mouseY = 0;
-        const cursor = document.getElementById('custom-cursor');
+        instructions.addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
 
-        // Update custom cursor position and track coordinates for 3D rotation
-        function updateMouse(event) {
-            let clientX = event.clientX || (event.touches && event.touches[0].clientX);
-            let clientY = event.clientY || (event.touches && event.touches[0].clientY);
-            
-            if (clientX !== undefined && clientY !== undefined) {
-                // Move custom HTML cursor
-                cursor.style.left = clientX + 'px';
-                cursor.style.top = clientY + 'px';
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === document.body) {
+                isLocked = true;
+                instructions.style.display = 'none';
+            } else {
+                isLocked = false;
+                instructions.style.display = 'flex';
+            }
+        });
 
-                // Normalize mouse coordinates for Three.js (-1 to +1)
-                mouseX = (clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(clientY / window.innerHeight) * 2 + 1;
+        // Mouse Look
+        let pitch = 0;
+        let yaw = 0;
+        document.addEventListener('mousemove', (event) => {
+            if (!isLocked) return;
+            yaw -= event.movementX * 0.002;
+            pitch -= event.movementY * 0.002;
+            pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch)); // Prevent flipping over
+            camera.rotation.set(pitch, yaw, 0, 'YXZ');
+        });
+
+        // Keyboard Movement (WASD)
+        const keys = { w: false, a: false, s: false, d: false, shift: false };
+        document.addEventListener('keydown', (e) => { 
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true; 
+        });
+        document.addEventListener('keyup', (e) => { 
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false; 
+        });
+
+        // --- 5. TARGETING SYSTEM (RAYCASTER) ---
+        const raycaster = new THREE.Raycaster();
+        const center = new THREE.Vector2(0, 0); // Center of the screen
+        const hudName = document.getElementById('target-name');
+        const hudDist = document.getElementById('target-dist');
+        const hudSpeed = document.getElementById('speed-ind');
+
+        function updateTargeting() {
+            raycaster.setFromCamera(center, camera);
+            const intersects = raycaster.intersectObjects(universeObjects);
+
+            if (intersects.length > 0) {
+                const target = intersects[0];
+                hudName.innerText = `Target: ${target.object.userData.name}`;
+                hudDist.innerText = `Distance: ${Math.floor(target.distance)} Light Years`;
+                document.getElementById('crosshair').style.borderColor = '#ffaa00';
+                document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1.5)';
+            } else {
+                hudName.innerText = `Target: Deep Space`;
+                hudDist.innerText = `Distance: ---`;
+                document.getElementById('crosshair').style.borderColor = 'rgba(0, 255, 255, 0.5)';
+                document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1)';
             }
         }
 
-        document.addEventListener('mousemove', updateMouse);
-        document.addEventListener('touchmove', updateMouse);
-
-        // Expand cursor on click/touch
-        document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
-        document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
-        document.addEventListener('touchstart', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
-        document.addEventListener('touchend', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
-
-        // 4. Animation Loop
+        // --- 6. ANIMATION & FLIGHT LOOP ---
+        const direction = new THREE.Vector3();
         function animate() {
             requestAnimationFrame(animate);
 
-            // Slowly rotate the entire starfield
-            starMesh.rotation.y += 0.001;
-            starMesh.rotation.x += 0.0005;
+            if (isLocked) {
+                // Determine flight speed
+                const speed = keys.shift ? 20 : 5; // Hold shift to boost
+                hudSpeed.innerText = (keys.w || keys.a || keys.s || keys.d) ? `Engine Status: Active (Warp ${keys.shift ? '2' : '1'})` : `Engine Status: Idle`;
 
-            // Make the stars react to the cursor (parallax effect)
-            starMesh.rotation.y += mouseX * 0.01;
-            starMesh.rotation.x += mouseY * 0.01;
+                // Calculate movement relative to camera direction
+                direction.z = Number(keys.w) - Number(keys.s);
+                direction.x = Number(keys.d) - Number(keys.a);
+                direction.normalize();
+
+                if (keys.w || keys.s) camera.translateZ(-direction.z * speed);
+                if (keys.a || keys.d) camera.translateX(direction.x * speed);
+
+                // Spin objects slowly for life-like effect
+                universeObjects.forEach(obj => {
+                    obj.rotation.y += 0.001;
+                    obj.rotation.x += 0.0005;
+                });
+
+                // Run Targeting scanner
+                updateTargeting();
+            }
 
             renderer.render(scene, camera);
         }
 
         animate();
 
-        // 5. Handle Window Resize
+        // Handle Window Resizing gracefully
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();

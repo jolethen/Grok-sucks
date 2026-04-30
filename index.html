@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond the Competition</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: none; /* Hides the default cursor */
+        }
+        
+        /* The Custom Glowing Cursor */
+        #custom-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #fff 0%, rgba(0, 255, 255, 0.5) 50%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+            z-index: 100;
+            box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.4);
+        }
+
+        /* Overlay Text */
+        #ui-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #aaa;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            color: #00ffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="custom-cursor"></div>
+
+    <div id="ui-layer">
+        <h1>Built Different</h1>
+        <p>Why start a flame war when you can just build the universe? <br>Powered by <span class="highlight">Gemini</span>. Crafted for the future.</p>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // 1. Setup Scene, Camera, and Renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Create the Starfield (Particles)
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 5000;
+        const posArray = new Float32Array(starCount * 3);
+
+        for(let i = 0; i < starCount * 3; i++) {
+            // Spread stars randomly in a massive sphere
+            posArray[i] = (Math.random() - 0.5) * 2000;
+        }
+
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        const starMaterial = new THREE.PointsMaterial({
+            size: 2,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const starMesh = new THREE.Points(starGeometry, starMaterial);
+        scene.add(starMesh);
+
+        camera.position.z = 500;
+
+        // 3. Mouse/Touch Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        const cursor = document.getElementById('custom-cursor');
+
+        // Update custom cursor position and track coordinates for 3D rotation
+        function updateMouse(event) {
+            let clientX = event.clientX || (event.touches && event.touches[0].clientX);
+            let clientY = event.clientY || (event.touches && event.touches[0].clientY);
+            
+            if (clientX !== undefined && clientY !== undefined) {
+                // Move custom HTML cursor
+                cursor.style.left = clientX + 'px';
+                cursor.style.top = clientY + 'px';
+
+                // Normalize mouse coordinates for Three.js (-1 to +1)
+                mouseX = (clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(clientY / window.innerHeight) * 2 + 1;
+            }
+        }
+
+        document.addEventListener('mousemove', updateMouse);
+        document.addEventListener('touchmove', updateMouse);
+
+        // Expand cursor on click/touch
+        document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
+        document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
+        document.addEventListener('touchstart', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1.5)'; });
+        document.addEventListener('touchend', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; });
+
+        // 4. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Slowly rotate the entire starfield
+            starMesh.rotation.y += 0.001;
+            starMesh.rotation.x += 0.0005;
+
+            // Make the stars react to the cursor (parallax effect)
+            starMesh.rotation.y += mouseX * 0.01;
+            starMesh.rotation.x += mouseY * 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // 5. Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
